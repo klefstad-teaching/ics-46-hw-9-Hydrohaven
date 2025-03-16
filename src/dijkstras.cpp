@@ -1,23 +1,7 @@
 #include "dijkstras.h"
 #include <algorithm>
 
-istream& operator>>(istream& in, Graph& G) {
-    if (!(in >> G.numVertices))
-        throw runtime_error("Unable to find input file");
-    G.resize(G.numVertices);
-    for (Edge e; in >> e; )
-        G[e.src].push_back(e);
-    return in;
-}
-
-void file_to_graph(const string& filename, Graph& G) {
-    ifstream in(filename);
-    if (!in) {
-        throw runtime_error("Can't open input file");
-    }
-    in >> G;
-    in.close();
-}
+using namespace std;
 
 vector<int> dijkstra_shortest_path(const Graph& G, int source, vector<int>& previous) {
     int n = G.numVertices;

@@ -1,9 +1,12 @@
 #include <iostream>
 #include "ladder.h"
+#include <set>
+#include <vector>
+#include <string>
 using namespace std;
 
 int main() {
-    // Load dictionary from src/words.txt
+    // Load the dictionary from src/words.txt.
     set<string> word_list;
     load_words(word_list, "src/words.txt");
     

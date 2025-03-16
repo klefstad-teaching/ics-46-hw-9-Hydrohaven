@@ -23,39 +23,76 @@ void error(string word1, string word2, string msg) {
     cerr << "Error between \"" << word1 << "\" and \"" << word2 << "\": " << msg << endl;
 }
 
-// Computes the edit distance (Levenshtein) between str1 and str2 and returns true if it is <= d.
 bool edit_distance_within(const std::string& str1, const std::string& str2, int d) {
-    int n = str1.size(), m = str2.size();
-    // If the difference in length is greater than d, they can't be within d edits.
-    if (abs(n - m) > d)
+    // For thresholds > 1, fall back to full DP (unlikely to be used).
+    if(d > 1) {
+        int n = str1.size(), m = str2.size();
+        if (abs(n - m) > d)
+            return false;
+        vector<vector<int>> dp(n + 1, vector<int>(m + 1, 0));
+        for (int i = 0; i <= n; i++)
+            dp[i][0] = i;
+        for (int j = 0; j <= m; j++)
+            dp[0][j] = j;
+        for (int i = 1; i <= n; i++) {
+            for (int j = 1; j <= m; j++) {
+                if (tolower(str1[i - 1]) == tolower(str2[j - 1]))
+                    dp[i][j] = dp[i - 1][j - 1];
+                else
+                    dp[i][j] = 1 + min({ dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1] });
+            }
+        }
+        return dp[n][m] <= d;
+    }
+    
+    // Now handle the d==1 case optimally.
+    int len1 = str1.size();
+    int len2 = str2.size();
+    if (abs(len1 - len2) > 1)
         return false;
     
-    vector<vector<int>> dp(n + 1, vector<int>(m + 1, 0));
-    for (int i = 0; i <= n; i++)
-        dp[i][0] = i;
-    for (int j = 0; j <= m; j++)
-        dp[0][j] = j;
+    // If the strings are equal (ignoring case), edit distance is 0.
+    if (to_lower(str1) == to_lower(str2))
+        return true;
     
-    for (int i = 1; i <= n; i++) {
-        for (int j = 1; j <= m; j++) {
-            if (tolower(str1[i - 1]) == tolower(str2[j - 1]))
-                dp[i][j] = dp[i - 1][j - 1];
-            else
-                dp[i][j] = 1 + min({ dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1] });
+    // If lengths are equal, check for at most one substitution.
+    if (len1 == len2) {
+        int diffCount = 0;
+        for (int i = 0; i < len1; i++) {
+            if (tolower(str1[i]) != tolower(str2[i]))
+                diffCount++;
+            if (diffCount > 1)
+                return false;
         }
+        return true;
+    } else {
+        // Otherwise, lengths differ by exactly 1.
+        // Let shorter and longer be defined.
+        const string &shorter = (len1 < len2) ? str1 : str2;
+        const string &longer  = (len1 < len2) ? str2 : str1;
+        int i = 0, j = 0;
+        bool foundDifference = false;
+        while (i < shorter.size() && j < longer.size()) {
+            if (tolower(shorter[i]) == tolower(longer[j])) {
+                i++;
+                j++;
+            } else {
+                if (foundDifference)
+                    return false;
+                foundDifference = true;
+                j++; // skip one letter in the longer string
+            }
+        }
+        return true;
     }
-    return dp[n][m] <= d;
 }
 
-// Determines if two words are adjacent by allowing an edit distance of 0 or 1.
-// (This ensures that is_adjacent("apple", "apple") returns true.)
+// Determines if two words are adjacent by allowing an edit distance of <= 1.
+// (Thus, is_adjacent("apple", "apple") returns true.)
 bool is_adjacent(const string& word1, const string& word2) {
     return edit_distance_within(word1, word2, 1);
 }
 
-// Generates a word ladder (shortest transformation sequence) from begin_word to end_word using BFS.
-// Only intermediate words (and the end word) must be in the dictionary.
-// The start word is allowed to be outside the dictionary.
 vector<string> generate_word_ladder(const string& begin_word, const string& end_word, const set<string>& word_list) {
     string start = to_lower(begin_word);
     string end = to_lower(end_word);
@@ -70,7 +107,7 @@ vector<string> generate_word_ladder(const string& begin_word, const string& end_
     vector<string> initial = { start };
     ladder_queue.push(initial);
     
-    // Keep track of words that have been used in any ladder to avoid cycles.
+    // Track words that have been used in any ladder.
     set<string> visited;
     visited.insert(start);
     
@@ -79,9 +116,9 @@ vector<string> generate_word_ladder(const string& begin_word, const string& end_
         ladder_queue.pop();
         string last_word = ladder.back();
         
-        // Iterate over dictionary words; skip if length difference > 1.
+        // Iterate only over dictionary words whose length difference with last_word is <= 1.
         for (const string& candidate : word_list) {
-            if (abs(static_cast<int>(candidate.size() - last_word.size())) > 1)
+            if (abs(static_cast<int>(candidate.size()) - static_cast<int>(last_word.size())) > 1)
                 continue;
             if (visited.find(candidate) == visited.end() && is_adjacent(last_word, candidate)) {
                 visited.insert(candidate);
@@ -97,7 +134,7 @@ vector<string> generate_word_ladder(const string& begin_word, const string& end_
     return vector<string>();
 }
 
-// Loads words from a file (one word per line) into word_list.
+// Loads words from a file (one word per line) into the provided set.
 // All words are converted to lowercase.
 void load_words(set<string>& word_list, const string& file_name) {
     ifstream infile(file_name);
@@ -113,9 +150,6 @@ void load_words(set<string>& word_list, const string& file_name) {
     infile.close();
 }
 
-// Prints the word ladder. If a ladder is found, prints:
-// "Word ladder found: <word1> <word2> ... <wordN> " (with a trailing space)
-// Otherwise prints "No word ladder found."
 void print_word_ladder(const vector<string>& ladder) {
     if (ladder.empty()) {
         cout << "No word ladder found." << "\n";

@@ -1,12 +1,9 @@
 #include <iostream>
 #include "ladder.h"
-#include <set>
-#include <vector>
-#include <string>
 using namespace std;
 
 int main() {
-    // Load the dictionary from src/words.txt.
+    // Load dictionary from src/words.txt
     set<string> word_list;
     load_words(word_list, "src/words.txt");
     
@@ -22,14 +19,8 @@ int main() {
         return 1;
     }
     
-    // Generate and print the word ladder.
     vector<string> ladder = generate_word_ladder(start, end, word_list);
-    if (ladder.empty()) {
-        cout << "No word ladder found from " << start << " to " << end << "." << endl;
-    } else {
-        cout << "Word ladder from " << start << " to " << end << ":\n";
-        print_word_ladder(ladder);
-    }
+    print_word_ladder(ladder);
     
     return 0;
 }

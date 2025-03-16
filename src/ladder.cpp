@@ -23,16 +23,14 @@ void error(string word1, string word2, string msg) {
     cerr << "Error between \"" << word1 << "\" and \"" << word2 << "\": " << msg << endl;
 }
 
-// Compute the edit distance between two strings and return true if it is <= d.
-// This implementation uses dynamic programming.
+// Computes the edit distance (Levenshtein) between str1 and str2 and returns true if it is <= d.
 bool edit_distance_within(const std::string& str1, const std::string& str2, int d) {
     int n = str1.size(), m = str2.size();
-    // If the length difference is greater than d, they cannot be within d edits.
+    // If the difference in length is greater than d, they can't be within d edits.
     if (abs(n - m) > d)
         return false;
     
     vector<vector<int>> dp(n + 1, vector<int>(m + 1, 0));
-    
     for (int i = 0; i <= n; i++)
         dp[i][0] = i;
     for (int j = 0; j <= m; j++)
@@ -49,17 +47,15 @@ bool edit_distance_within(const std::string& str1, const std::string& str2, int 
     return dp[n][m] <= d;
 }
 
-// Returns true if the two words are adjacent (i.e., differ by exactly one letter
-// via an insertion, deletion, or substitution).
+// Determines if two words are adjacent by allowing an edit distance of 0 or 1.
+// (This ensures that is_adjacent("apple", "apple") returns true.)
 bool is_adjacent(const string& word1, const string& word2) {
-    // Identical words are not adjacent.
-    if (to_lower(word1) == to_lower(word2))
-        return false;
     return edit_distance_within(word1, word2, 1);
 }
 
-// Uses BFS to generate the shortest word ladder from begin_word to end_word.
-// The dictionary word_list is assumed to contain only valid intermediate words (in lowercase).
+// Generates a word ladder (shortest transformation sequence) from begin_word to end_word using BFS.
+// Only intermediate words (and the end word) must be in the dictionary.
+// The start word is allowed to be outside the dictionary.
 vector<string> generate_word_ladder(const string& begin_word, const string& end_word, const set<string>& word_list) {
     string start = to_lower(begin_word);
     string end = to_lower(end_word);
@@ -70,13 +66,11 @@ vector<string> generate_word_ladder(const string& begin_word, const string& end_
         return vector<string>();
     }
     
-    // Queue of ladders (each ladder is a vector of words).
     queue<vector<string>> ladder_queue;
-    vector<string> initial;
-    initial.push_back(start);
+    vector<string> initial = { start };
     ladder_queue.push(initial);
     
-    // Use a visited set to ensure we never reuse a word (which guarantees minimal paths).
+    // Keep track of words that have been used in any ladder to avoid cycles.
     set<string> visited;
     visited.insert(start);
     
@@ -85,8 +79,10 @@ vector<string> generate_word_ladder(const string& begin_word, const string& end_
         ladder_queue.pop();
         string last_word = ladder.back();
         
-        // Check every word in the dictionary.
+        // Iterate over dictionary words; skip if length difference > 1.
         for (const string& candidate : word_list) {
+            if (abs(static_cast<int>(candidate.size() - last_word.size())) > 1)
+                continue;
             if (visited.find(candidate) == visited.end() && is_adjacent(last_word, candidate)) {
                 visited.insert(candidate);
                 vector<string> new_ladder = ladder;
@@ -101,7 +97,7 @@ vector<string> generate_word_ladder(const string& begin_word, const string& end_
     return vector<string>();
 }
 
-// Loads words from a file (one word per line) into the provided set.
+// Loads words from a file (one word per line) into word_list.
 // All words are converted to lowercase.
 void load_words(set<string>& word_list, const string& file_name) {
     ifstream infile(file_name);
@@ -117,12 +113,17 @@ void load_words(set<string>& word_list, const string& file_name) {
     infile.close();
 }
 
-// Prints the word ladder using " -> " between words.
+// Prints the word ladder. If a ladder is found, prints:
+// "Word ladder found: <word1> <word2> ... <wordN> " (with a trailing space)
+// Otherwise prints "No word ladder found."
 void print_word_ladder(const vector<string>& ladder) {
-    for (size_t i = 0; i < ladder.size(); i++) {
-        cout << ladder[i];
-        if (i < ladder.size() - 1)
-            cout << " -> ";
+    if (ladder.empty()) {
+        cout << "No word ladder found." << "\n";
+        return;
+    }
+    cout << "Word ladder found: ";
+    for (const auto& word : ladder) {
+        cout << word << " ";
     }
     cout << "\n";
 }

@@ -1,6 +1,8 @@
 #include "ladder.h"
 #include <cctype>
 
+using namespace std;
+
 // Helper function: convert a string to lowercase.
 string to_lower(const string& s) {
     string result;

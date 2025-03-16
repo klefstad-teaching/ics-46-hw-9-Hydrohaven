@@ -58,11 +58,11 @@ vector<int> extract_shortest_path(const vector<int>& distances, const vector<int
 }
 
 void print_path(const vector<int>& v, int total) {
-    // Print the path in the format: vertex0 -> vertex1 -> ... -> vertexN (Total cost: total)
     for (size_t i = 0; i < v.size(); i++) {
         cout << v[i];
         if (i != v.size() - 1)
-            cout << " -> ";
+            cout << " ";
     }
-    cout << " (Total cost: " << total << ")" << endl;
+    cout << "\nTotal cost is " << total << "\n";
 }
+
